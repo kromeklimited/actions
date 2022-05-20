@@ -48,7 +48,7 @@ jobs:
       run: |
         PKG_VERSION=$(python ${{ inputs.source_code_location }}/setup.py --version)
         SHA_SHORT=$(git rev-parse --short HEAD)
-        FULL_BUILD_VERSION=$PKG_VERSION.$SHA_SHORT
+        FULL_BUILD_VERSION=$PKG_VERSION.${{ github.run_number }}
         echo "Package version number will be v$FULL_BUILD_VERSION"
         echo ::set-output name=full_build_version::$FULL_BUILD_VERSION
         echo ::set-output name=sha_short::$SHA_SHORT
@@ -56,7 +56,7 @@ jobs:
     - name: Build package once
       id: build
       run: |
-        export CONDA_BUILD_NUMBER=${{ steps.getver.outputs.sha_short }}
+        export CONDA_BUILD_NUMBER=${{ github.run_number }}
         mkdir ./conda-build-output
         PKG_FILENAME=$($CONDA/bin/conda build ${{ inputs.recipe_location }} --output-folder ./conda-build-output/ -c defaults -c conda-forge --output)
         $CONDA/bin/conda build ${{ inputs.recipe_location }} --output-folder ./conda-build-output/ -c defaults -c conda-forge
