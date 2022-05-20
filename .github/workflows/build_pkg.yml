@@ -1,8 +1,6 @@
 name: Build conda package
 
 on:
-  workflow_dispatch:
-
   workflow_call:
     inputs:
       source_code_location:
