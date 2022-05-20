@@ -1,0 +1,76 @@
+name: Build conda package
+
+on:
+  workflow_dispatch:
+
+  workflow_call:
+    inputs:
+      source_code_location:
+        description: 'The directory in which the setup.py file is located, from the repo root'
+        required: true
+        type: string
+
+      recipe_location:
+        description: 'The directory in which the conda recipe files are located, from the repo root'
+        required: false
+        default: 'conda.recipe'
+        type: string
+
+      python_version:
+        description: 'The Python version to use for the environment setup'
+        required: false
+        default: '3.10'
+        type: string
+
+
+jobs:
+  build-conda:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check input variables
+      run: |
+        echo "source_code_location: ${env.INPUT_SOURCE_CODE_LOCATION}"
+        echo "recipe_location: ${env.INPUT_RECIPE_LOCATION}"
+        echo "python_version: ${env.INPUT_PYTHON_VERSION}"
+
+    - uses: actions/checkout@v3
+
+    - name: Set up conda env
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${env.INPUT_PYTHON_VERSION}
+
+    - name: Install dependencies
+      run: |
+        $CONDA/bin/conda env update -n base --file ${env.INPUT_RECIPE_LOCATION}/build_environment.yml
+
+    - name: Read package version number
+      id: getver
+      run: |
+        PKG_VERSION=$(python ${env.INPUT_SOURCE_CODE_LOCATION}/setup.py --version)
+        SHA_SHORT=$(git rev-parse --short HEAD)
+        FULL_BUILD_VERSION=$PKG_VERSION.$SHA_SHORT
+        echo "Package version number will be v$FULL_BUILD_VERSION"
+        echo ::set-output name=full_build_version::$FULL_BUILD_VERSION
+        echo ::set-output name=sha_short::$SHA_SHORT
+
+    - name: Build package once
+      id: build
+      run: |
+        export CONDA_BUILD_NUMBER=${{ steps.getver.outputs.sha_short }}
+        mkdir ./conda-build-output
+        PKG_FILENAME=$($CONDA/bin/conda build ${env.INPUT_RECIPE_LOCATION} --output-folder ./conda-build-output/ -c defaults -c conda-forge --output)
+        $CONDA/bin/conda build ${env.INPUT_RECIPE_LOCATION} --output-folder ./conda-build-output/ -c defaults -c conda-forge
+        echo ::set-output name=pkg_filename::$PKG_FILENAME
+        
+    - name: Convert package to other platforms
+      continue-on-error: true
+      run: |
+        $CONDA/bin/conda convert ${{ steps.build.outputs.pkg_filename }} --platform all --output-dir conda-build-output/
+        
+    - name: Upload built packages
+      uses: actions/upload-artifact@v3
+      with:
+        name: Package files
+        path: conda-build-output/**/*.tar.bz2
