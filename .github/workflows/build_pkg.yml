@@ -49,8 +49,8 @@ jobs:
         PKG_NAME=$(python ${{ inputs.source_code_location }}/setup.py --name)
         PKG_VERSION=$(python ${{ inputs.source_code_location }}/setup.py --version)
         SHA_SHORT=$(git rev-parse --short HEAD)
-        FULL_BUILD_VERSION=$PKG_VERSION-$SHA_SHORT_${{ github.run_number }}
-        echo "Package version number will be v$FULL_BUILD_VERSION"
+        FULL_BUILD_VERSION=${PKG_VERSION}-${SHA_SHORT}_${{ github.run_number }}
+        echo "Package version number will be v${FULL_BUILD_VERSION}"
         echo ::set-output name=pkg_name::$PKG_NAME
         echo ::set-output name=full_build_version::$FULL_BUILD_VERSION
         echo ::set-output name=sha_short::$SHA_SHORT
@@ -73,5 +73,5 @@ jobs:
     - name: Upload built packages
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ steps.getver.pkg_name }}-${{ steps.getver.full_build_version }}
+        name: ${{ steps.getver.outputs.pkg_name }}-${{ steps.getver.outputs.full_build_version }}
         path: conda-build-output/**/*.tar.bz2
