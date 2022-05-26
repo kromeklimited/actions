@@ -59,7 +59,7 @@ jobs:
       id: build
       run: |
         export CONDA_BUILD_NUMBER=${{ github.run_number }}
-        export CONDA_BUILD_STR=${{ steps.getver.sha_short }}
+        export CONDA_BUILD_STR=${{ steps.getver.outputs.sha_short }}
         mkdir ./conda-build-output
         PKG_FILENAME=$($CONDA/bin/conda build ${{ inputs.recipe_location }} --output-folder ./conda-build-output/ -c defaults -c conda-forge --output)
         $CONDA/bin/conda build ${{ inputs.recipe_location }} --output-folder ./conda-build-output/ -c defaults -c conda-forge
