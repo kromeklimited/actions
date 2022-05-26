@@ -46,10 +46,12 @@ jobs:
     - name: Read package version number
       id: getver
       run: |
+        PKG_NAME=$(python ${{ inputs.source_code_location }}/setup.py --name)
         PKG_VERSION=$(python ${{ inputs.source_code_location }}/setup.py --version)
         SHA_SHORT=$(git rev-parse --short HEAD)
-        FULL_BUILD_VERSION=$PKG_VERSION.${{ github.run_number }}
+        FULL_BUILD_VERSION=$PKG_VERSION-$SHA_SHORT_${{ github.run_number }}
         echo "Package version number will be v$FULL_BUILD_VERSION"
+        echo ::set-output name=pkg_name::$PKG_NAME
         echo ::set-output name=full_build_version::$FULL_BUILD_VERSION
         echo ::set-output name=sha_short::$SHA_SHORT
 
@@ -57,6 +59,7 @@ jobs:
       id: build
       run: |
         export CONDA_BUILD_NUMBER=${{ github.run_number }}
+        export CONDA_BUILD_STR=${{ steps.getver.sha_short }}
         mkdir ./conda-build-output
         PKG_FILENAME=$($CONDA/bin/conda build ${{ inputs.recipe_location }} --output-folder ./conda-build-output/ -c defaults -c conda-forge --output)
         $CONDA/bin/conda build ${{ inputs.recipe_location }} --output-folder ./conda-build-output/ -c defaults -c conda-forge
@@ -70,5 +73,5 @@ jobs:
     - name: Upload built packages
       uses: actions/upload-artifact@v3
       with:
-        name: Package files
+        name: ${{ steps.getver.pkg_name }}-${{ steps.getver.full_build_version }}
         path: conda-build-output/**/*.tar.bz2
